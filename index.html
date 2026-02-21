@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#6E5CFF" />
+  <title>TalkPick</title>
+  <meta name="description" content="대화가 막힐 때, 질문 카드로 스몰토크 주제를 추천해주는 TalkPick." />
+  <meta property="og:title" content="TalkPick - 스몰토크 주제 추천 서비스"/>
+  <meta property="og:description" content="대화가 막힐 때, 질문 카드 한 장으로 시작." />
+  <meta property="og:type" content="website" />
+
+  <style>
+    :root{
+      --txt: rgba(17,17,17,.95);
+      --muted: rgba(17,17,17,.65);
+      --accent2:#B8A9FF;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.18);
+      --radius2: 28px;
+
+      --max: 1120px;
+      --pad: 20px;
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; background:#fff; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+      color: var(--txt);
+      background:#fff;
+      overflow-x:hidden;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+
+    .container{
+      width: min(var(--max), calc(100% - var(--pad)*2));
+      margin: 0 auto;
+    }
+
+    /* NAV */
+    .nav{
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(14px);
+      background: rgba(255,255,255,.78);
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .nav-inner{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      padding: 14px 0;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .logo{
+      width: 45px; height: 45px;
+      border-radius: 10px;
+      overflow:hidden;
+      border: 1px solid rgba(0,0,0,.10);
+      display:grid; place-items:center;
+      background:#fff;
+    }
+    .logo img{ width:100%; height:100%; object-fit:cover; }
+
+    /* HERO */
+    .hero{ padding: 40px 0 20px; }
+
+    h1{
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.2;
+      letter-spacing: -0.4px;
+    }
+    .hero p{
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    /* ===== Scroll Animation (reveal) ===== */
+    .reveal{
+      opacity: 0;
+      transform: translateY(34px) scale(.985);
+      filter: blur(8px);
+      transition:
+        opacity 1.15s cubic-bezier(.16, 1, .3, 1),
+        transform 1.15s cubic-bezier(.16, 1, .3, 1),
+        filter 1.25s cubic-bezier(.16, 1, .3, 1);
+      transition-delay: var(--d, 0ms);
+      will-change: opacity, transform, filter;
+    }
+    .reveal.show{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+
+    /* ===== HERO VISUAL (2 phones cross + TALKPICK center) ===== */
+    .hero-visual{ margin-top: 18px; }
+
+    .visual-stage{
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,.06);
+      box-shadow: var(--shadow);
+    }
+
+    /* TALKPICK 중앙 */
+    .tp-word{
+      position:absolute;
+      left: 50%;
+      top: 43%;
+      width: 32%;
+      height: auto;
+      max-width: 340px;
+      z-index: 6;
+      opacity: 0;
+      transform: translate(-50%, -50%) translateY(12px);
+      transition:
+        opacity 1.6s cubic-bezier(.16,1,.3,1),
+        transform 1.6s cubic-bezier(.16,1,.3,1);
+      transition-delay: 320ms;
+      will-change: opacity, transform;
+      pointer-events:none;
+    }
+
+    /* 폰 공통 */
+    .phone{
+      position:absolute;
+      height: 118%;
+      width: auto;
+      bottom: -30%;
+
+      opacity: 0;
+      filter: blur(10px);
+      will-change: transform, opacity, filter;
+    }
+
+    /* 왼쪽 폰 */
+    .phone-left{
+      left: -6%;
+      z-index: 4;
+      transform: translateY(120px) translateX(150px) scale(.98);
+      transition:
+        opacity 1.45s cubic-bezier(.16,1,.3,1),
+        transform 1.45s cubic-bezier(.16,1,.3,1),
+        filter 1.75s cubic-bezier(.16,1,.3,1);
+      transition-delay: 120ms;
+    }
+
+    /* 오른쪽 폰(위로 겹치게) */
+    .phone-right{
+      right: -6%;
+      z-index: 5;
+      transform: translateY(130px) translateX(-150px) scale(.98);
+      transition:
+        opacity 1.55s cubic-bezier(.16,1,.3,1),
+        transform 1.55s cubic-bezier(.16,1,.3,1),
+        filter 1.85s cubic-bezier(.16,1,.3,1);
+      transition-delay: 220ms;
+    }
+
+    /* 진입 후 */
+    .hero-visual.inview .tp-word{
+      opacity: 1;
+      transform: translate(-50%, -50%) translateY(0);
+    }
+    .hero-visual.inview .phone{
+      opacity: 1;
+      filter: blur(0);
+    }
+    .hero-visual.inview .phone-left{
+      transform: translateY(0) translateX(120px) rotate(-14deg) scale(1);
+    }
+    .hero-visual.inview .phone-right{
+      transform: translateY(0) translateX(-120px) rotate(14deg) scale(1);
+    }
+
+    /* IG 캡션 */
+    .mock-caption{
+      position:absolute;
+      left: 16px;
+      bottom: 14px;
+      z-index: 10;
+    }
+    .caption-box{
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.75);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 10px 12px;
+      color: rgba(17,17,17,.85);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    /* CTA */
+    .cta-center{
+      margin-top: 34px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      gap:10px;
+    }
+    .cta-appicon{
+      width:96px;
+      height:96px;
+      border-radius:24px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.12);
+    }
+    .cta-title{
+      margin:0;
+      font-size:42px;
+      font-weight:900;
+      letter-spacing:-0.5px;
+      color: var(--txt);
+    }
+    .cta-store-tight{ margin-top:-10px; }
+    .cta-store img{
+      height:200px;
+      width:auto;
+      display:block;
+    }
+
+    /* Footer */
+    footer{
+      padding: 30px 0 50px;
+      color: rgba(17,17,17,.55);
+      font-size: 13px;
+    }
+    .footer-grid{
+      display:flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(0,0,0,.08);
+      padding-top: 18px;
+    }
+
+    /* reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      .reveal{ transition:none; transform:none; filter:none; opacity:1; }
+      .tp-word, .phone{ transition:none; opacity:1; transform:none; filter:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAV -->
+  <div class="nav" id="top">
+    <div class="container">
+      <div class="nav-inner">
+        <a class="brand" href="#top" aria-label="TalkPick 홈">
+          <div class="logo" aria-hidden="true">
+            <img src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/talkpick-logo.png" alt="" onerror="this.remove(); this.parentElement.textContent='TP'; this.parentElement.style.fontWeight='900';" />
+          </div>
+          <div><strong>TalkPick</strong></div>
+        </a>
+
+        <a href="https://www.instagram.com/talkpick_official?igsh=aDJrNDF1Zjg1NGZ0&utm_source=qr"
+           target="_blank" rel="noopener" style="display:inline-flex; align-items:center;">
+          <img src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/Instagram.png" alt="Go to IG Home" style="height:30px; width:auto; display:block;">
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="container">
+      <br><br>
+
+      <h1 class="reveal">
+        <span style="color:var(--accent);">어색한 분위기를 풀고 싶을 때,</span>
+      </h1>
+      <p class="reveal" style="font-size:50px;">상황에 맞는 스몰토크가 필요할 때 !</p><br>
+
+      <section class="hero-visual" id="heroVisual" style="margin-top:18px;">
+        <div class="visual-stage">
+          <!-- TALKPICK 중앙 -->
+          <img class="tp-word" src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/talkpick_word.png" alt="TALK PICK" />
+
+          <!-- 두 폰 -->
+          <img class="phone phone-left"  src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/phone_left.png"  alt="TalkPick 화면 목업 왼쪽" />
+          <img class="phone phone-right" src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/phone_right.png" alt="TalkPick 화면 목업 오른쪽" />
+
+          <!-- IG 태그 -->
+          <div class="mock-caption">
+            <div class="caption-box"><b>@talkpick_official</b></div>
+          </div>
+        </div>
+      </section>
+
+      <br><br><br><br><br><br>
+
+      <!-- FINAL CTA -->
+      <section class="reveal">
+        <div class="cta-center">
+          <img class="cta-appicon" src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/logo.png" alt="Talk Pick 앱 아이콘"><br>
+          <h2 class="cta-title">지금 Talk Pick을 다운로드 해보세요!</h2>
+          <a class="cta-store cta-store-tight" href="https://apps.apple.com/app/idYOUR_APP_ID" target="_blank" rel="noopener">
+            <img src="https://talkpick-assets.s3.ap-northeast-2.amazonaws.com/talkpick_landing_assets/download-app.svg" alt="Download on the App Store">
+          </a>
+        </div>
+      </section>
+    </div>
+  </header>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div style="font-weight:900;color:rgba(17,17,17,.85);">TalkPick</div>
+          <div style="margin-top:6px;">© <span id="year"></span> TalkPick. All rights reserved.</div>
+        </div>
+
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+          <a href="https://www.talkpick.co.kr/terms/privacy-policy/">개인정보 처리방침</a>
+          <a href="mailto:talkpick.official@gmail.com">문의</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // year
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // 1) hero visual: phones + TALKPICK
+    const hero = document.querySelector(".hero-visual");
+    const heroIO = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          hero.classList.add("inview");
+          heroIO.unobserve(hero);
+        }
+      });
+    }, { threshold: 0.25, rootMargin: "0px 0px -10% 0px" });
+    if (hero) heroIO.observe(hero);
+
+    // 2) reveal elements
+    const targets = [...document.querySelectorAll(".reveal")];
+    targets.forEach((el, i) => el.style.setProperty("--d", `${i * 1}ms`)); // 서서히
+
+    const revealIO = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("show");
+          revealIO.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.18, rootMargin: "0px 0px -12% 0px" });
+
+    targets.forEach((el) => revealIO.observe(el));
+  </script>
+</body>
+</html>
